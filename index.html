@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Disaster Safe Zone Finder</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 1rem;
+        background: #f9f9f9;
+      }
+      #mapCanvas {
+        border: 1px solid #000;
+        width: 100%;
+        height: 400px;
+      }
+      #zones {
+        margin-top: 1rem;
+      }
+      .zone {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        background: #dff0d8;
+        border-left: 5px solid #3c763d;
+      }
+      .offline {
+        background-color: #f2dede;
+        color: #a94442;
+        padding: 1rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Disaster Safe Zone Finder</h1>
+    <div id="network-status"></div>
+    <canvas id="mapCanvas"></canvas>
+    <div id="zones"></div>
+
+    <script>
+      // Network Information API
+      function checkNetwork() {
+        const netDiv = document.getElementById("network-status");
+        if (navigator.connection) {
+          const type = navigator.connection.effectiveType;
+          if (type === "slow-2g" || type === "2g") {
+            netDiv.innerHTML =
+              '<div class="offline">Slow Network Detected - Loading Low Bandwidth Mode</div>';
+          } else {
+            netDiv.innerHTML = "";
+          }
+        }
+      }
+
+      checkNetwork();
+
+      // Geolocation API
+      function getLocation() {
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(showPosition, showError);
+        } else {
+          alert("Geolocation is not supported by this browser.");
+        }
+      }
+
+      function showPosition(position) {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        drawMap(lat, lon);
+        displaySafeZones(lat, lon);
+      }
+
+      function showError(error) {
+        alert("Error fetching location: " + error.message);
+      }
+
+      // Canvas API - Draw location on canvas
+      function drawMap(lat, lon) {
+        const canvas = document.getElementById("mapCanvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth - 32;
+        canvas.height = 400;
+
+        ctx.fillStyle = "#e0f7fa";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "red";
+        ctx.beginPath();
+        ctx.arc(canvas.width / 2, canvas.height / 2, 10, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.fillStyle = "#000";
+        ctx.font = "16px Arial";
+        ctx.fillText(
+          `You are here: (${lat.toFixed(4)}, ${lon.toFixed(4)})`,
+          10,
+          20
+        );
+      }
+
+      // Mock safe zones based on proximity (for demo purposes)
+      function displaySafeZones(lat, lon) {
+        const zones = [
+          { name: "Community Shelter A", lat: lat + 0.01, lon: lon + 0.01 },
+          { name: "Relief Center B", lat: lat - 0.008, lon: lon + 0.009 },
+          { name: "Hospital C", lat: lat + 0.005, lon: lon - 0.01 },
+        ];
+
+        const zonesContainer = document.getElementById("zones");
+        zonesContainer.innerHTML = "<h3>Nearby Safe Zones:</h3>";
+
+        zones.forEach((zone) => {
+          const el = document.createElement("div");
+          el.className = "zone";
+          el.innerText = `${zone.name} - (${zone.lat.toFixed(
+            4
+          )}, ${zone.lon.toFixed(4)})`;
+          zonesContainer.appendChild(el);
+        });
+      }
+
+      // Background Tasks API - Simple simulation with setInterval
+      if ("navigator" in window && "serviceWorker" in navigator) {
+        console.log(
+          "Service Workers supported (simulate background tasks if needed)."
+        );
+      }
+
+      // Intersection Observer API - Lazy load zones info when visible
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            getLocation();
+            observer.unobserve(entry.target);
+          }
+        });
+      });
+
+      observer.observe(document.getElementById("zones"));
+    </script>
+  </body>
+</html>
